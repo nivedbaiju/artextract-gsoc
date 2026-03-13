@@ -42,7 +42,7 @@ scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=epochs)
 scaler=GradScaler(enabled=(device.type == "cuda"))
 
 best_val_acc=0.0
-w_style,w_genre,w_artist=1/num_style,1/num_genre,1/num_artists
+w_style,w_genre,w_artist=num_style**-0.5,num_genre**-0.5,num_artists**-0.5
 total_w= w_style+ w_genre+ w_artist
 w_style/=total_w
 w_genre/=total_w   
