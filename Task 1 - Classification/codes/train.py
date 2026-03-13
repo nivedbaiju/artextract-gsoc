@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.amp import autocast,GradScaler
+import matplotlib.pyplot as plt
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -47,8 +48,15 @@ total_w= w_style+ w_genre+ w_artist
 w_style/=total_w
 w_genre/=total_w   
 w_artist/=total_w
-#test loop
 
+#we log these metrics for visualizaton
+train_losses = []
+val_losses = []
+style_accs = []
+genre_accs = []
+artist_accs = []
+
+#training loop
 for epoch in range(epochs):
     model.train()
     total_loss=0.0
@@ -79,7 +87,8 @@ for epoch in range(epochs):
     scheduler.step()
 
     avg_loss= total_loss / len(train_loader)
-    print(f"Epoch [{epoch+1}/{epochs}], Loss: {avg_loss:.4f}")
+    train_losses.append(avg_loss)
+    print(f"Epoch [{epoch+1}/{epochs}], Training Loss: {avg_loss:.4f}")
 
     #validation loop
 
@@ -98,7 +107,8 @@ for epoch in range(epochs):
             genre_labels=genre_labels.to(device)
             artist_labels=artist_labels.to(device)
 
-            style_out,genre_out,artist_out=model(images)
+            with autocast(device_type=device.type):
+                style_out,genre_out,artist_out=model(images)
 
             style_loss= style_loss_fn(style_out, style_labels)
             genre_loss= genre_loss_fn(genre_out, genre_labels)
@@ -121,14 +131,48 @@ for epoch in range(epochs):
         genre_acc= correct_genre/total_samples
         artist_acc= correct_artist/total_samples
 
+        val_losses.append(avg_val_loss)
+        style_accs.append(style_acc)
+        genre_accs.append(genre_acc)
+        artist_accs.append(artist_acc)
+
         combined_accuracy=(w_style*style_acc+ w_genre*genre_acc+ w_artist*artist_acc)
         #we save the best model
         if combined_accuracy > best_val_acc:
             best_val_acc= combined_accuracy
-            torch.save(model.state_dict(), "best_model.pth")
+            torch.save(model.state_dict(), "checkpoints/best_model.pth")
+            print(f"New best model obtained with combined accuracy: {best_val_acc:.4f}")
         
         print(f"Epoch [{epoch+1}/{epochs}] | "
             f"Validation Loss: {avg_val_loss:.4f} | "
             f"Style Acc: {style_acc:.4f} | "
             f"Genre Acc: {genre_acc:.4f} | "
             f"Artist Acc: {artist_acc:.4f}")
+        
+
+#plot the metrics
+
+#loss curve
+epochs_range= range(1, epochs+1)
+plt.figure()
+plt.plot(epochs_range,train_losses, label="Training Loss")
+plt.plot(epochs_range, val_losses, label="Validation Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training vs Validation Loss")
+plt.legend()
+plt.savefig("results/loss_curve.png")
+plt.close()
+
+#accuracy curves
+plt.figure()
+plt.plot(epochs_range,style_accs, label="Style Accuracy")
+plt.plot(epochs_range,genre_accs, label="Genre Accuracy")
+plt.plot(epochs_range,artist_accs, label="Artist Accuracy")
+
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("Validation Accuracy per Task")
+plt.legend()
+plt.savefig("results/accuracy_curve.png")
+plt.close()
