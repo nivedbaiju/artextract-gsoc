@@ -1,9 +1,5 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-import timm
-import sys
 from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
 from sklearn.model_selection import train_test_split
@@ -41,3 +37,12 @@ def getdataloader(csv_path, root_dir):
     train_loader=DataLoader(train_dataset,batch_size=32,shuffle=True,num_workers=4,pin_memory=True)
     val_loader=DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=4,pin_memory=True)
     return train_loader, val_loader
+
+def compute_weight(labels):
+    labels=torch.tensor(labels)
+    class_counts = torch.bincount(labels)
+    num_classes = len(class_counts)
+    total_samples = len(labels)
+
+    weights=total_samples / (num_classes * class_counts.clamp(min=1).float())
+    return weights
