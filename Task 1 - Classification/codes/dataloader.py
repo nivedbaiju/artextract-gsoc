@@ -46,3 +46,10 @@ def compute_weight(labels):
 
     weights=total_samples / (num_classes * class_counts.clamp(min=1).float())
     return weights
+
+def weight_values(csv_path, root_dir):
+    dataset= WikiArtSupervisedDataset(csv_path=csv_path, root_dir=root_dir,transform=None)
+    style_weights=compute_weight(dataset.style_labels)
+    genre_weights=compute_weight(dataset.genre_labels)
+    artist_weights=compute_weight(dataset.artist_labels)
+    return style_weights, genre_weights, artist_weights
