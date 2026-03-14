@@ -15,12 +15,17 @@ print(f"Using device:{device}")
 
 epochs=25
 
-train_loader,val_loader=getdataloader(csv_path="", root_dir="")
+train_loader,val_loader=getdataloader(train_csv="train.csv",
+    val_csv="val.csv",
+    root_dir="wikiart_images",
+    artist_map="artist_class.txt",
+    genre_map="genre_class.txt",
+    style_map="style_class.txt")
 
 num_style,num_genre,num_artists=0,0,0
 
 
-style_weights, genre_weights, artist_weights= (weight_values(csv_path="", root_dir=""))
+style_weights, genre_weights, artist_weights= (weight_values(csv_path="train.csv", root_dir="wikiart_images", artist_map="artist_class.txt", genre_map="genre_class.txt", style_map="style_class.txt"))
 style_weights=style_weights.to(device)
 genre_weights=genre_weights.to(device)
 artist_weights=artist_weights.to(device)
@@ -30,6 +35,9 @@ num_genre = len(genre_weights)
 num_artists = len(artist_weights)
 
 model=CNN_BiLSTM(num_style=num_style,num_genre=num_genre,num_artists=num_artists).to(device)
+
+for p in model.cnn_backbone.parameters():
+    p.requires_grad = False
 
 style_loss_fn=nn.CrossEntropyLoss(weight=style_weights,label_smoothing=0.1)
 genre_loss_fn=nn.CrossEntropyLoss(weight=genre_weights,label_smoothing=0.1)
@@ -58,6 +66,9 @@ artist_accs = []
 
 #training loop
 for epoch in range(epochs):
+    if epoch == 3:
+        for p in model.cnn_backbone.parameters():
+            p.requires_grad = True
     model.train()
     total_loss=0.0
 
@@ -78,7 +89,7 @@ for epoch in range(epochs):
             loss= w_style*style_loss+ w_genre*genre_loss+ w_artist*artist_loss
 
         scaler.scale(loss).backward()
-
+        scaler.unscale_(optimizer)
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
         scaler.step(optimizer)
         scaler.update()
@@ -88,12 +99,13 @@ for epoch in range(epochs):
 
     avg_loss= total_loss / len(train_loader)
     train_losses.append(avg_loss)
-    print(f"Epoch [{epoch+1}/{epochs}], Training Loss: {avg_loss:.4f}")
+    lr=optimizer.param_groups[0]['lr']
+    print(f"Epoch [{epoch+1}/{epochs}], Training Loss: {avg_loss:.4f}, LR:{lr:.6f}")
 
     #validation loop
 
     model.eval()
-    validation_loss=0
+    validation_loss=0.0
     correct_style=0
     correct_genre=0
     correct_artist=0
@@ -110,11 +122,11 @@ for epoch in range(epochs):
             with autocast(device_type=device.type):
                 style_out,genre_out,artist_out=model(images)
 
-            style_loss= style_loss_fn(style_out, style_labels)
-            genre_loss= genre_loss_fn(genre_out, genre_labels)
-            artist_loss= artist_loss_fn(artist_out, artist_labels)
+                style_loss= style_loss_fn(style_out, style_labels)
+                genre_loss= genre_loss_fn(genre_out, genre_labels)
+                artist_loss= artist_loss_fn(artist_out, artist_labels)
 
-            loss= w_style*style_loss+w_genre*genre_loss+ w_artist*artist_loss
+                loss= w_style*style_loss+w_genre*genre_loss+ w_artist*artist_loss
             validation_loss+=loss.item()
 
             _, predicted_style = torch.max(style_out, 1)
