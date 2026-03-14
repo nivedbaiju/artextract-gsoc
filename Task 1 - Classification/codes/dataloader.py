@@ -48,8 +48,8 @@ def getdataloader(train_csv,val_csv, root_dir,artist_map,genre_map,style_map):
     print(f"No of training samples:",len(train_dataset))
     print(f"No of validation samples:",len(val_dataset))
 
-    train_loader=DataLoader(train_dataset,batch_size=32,shuffle=True,num_workers=4,pin_memory=True)
-    val_loader=DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=4,pin_memory=True)
+    train_loader=DataLoader(train_dataset,batch_size=8,shuffle=True,num_workers=2,pin_memory=True)
+    val_loader=DataLoader(val_dataset,batch_size=8,shuffle=False,num_workers=2,pin_memory=True)
     return train_loader, val_loader
 
 def compute_weight(labels):
