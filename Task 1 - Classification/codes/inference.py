@@ -14,24 +14,31 @@ transform=v2.Compose([v2.Resize(300),v2.CenterCrop(300),
                                 v2.Normalize(mean=[0.485, 0.456, 0.406],
                                              std=[0.229, 0.224, 0.225])])
 
-style_weights, genre_weights, artist_weights = weight_values(
-    csv_path="train.csv",
-    root_dir="wikiart_images",
-    artist_map="artist_class.txt",
-    genre_map="genre_class.txt",
-    style_map="style_class.txt"
-)
+root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
+train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
+val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_merged.csv"
+artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
+csv_path=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
+
+style_weights, genre_weights, artist_weights= (weight_values(csv_path=csv_path, root_dir=root_dir, artist_map=artist_map, genre_map=genre_map, style_map=style_map))
+style_weights=style_weights.to(device)
+genre_weights=genre_weights.to(device)
+artist_weights=artist_weights.to(device)
 
 num_style = len(style_weights)
 num_genre = len(genre_weights)
 num_artists = len(artist_weights)
 
-dataset=WikiArtSupervisedDataset(root_dir="wikiart_images",
-    csv_file="train.csv",
-    artist_map="artist_class.txt",
-    genre_map="genre_class.txt",
-    style_map="style_class.txt",
-    transform=None)
+dataset = WikiArtSupervisedDataset(
+        root_dir=root_dir,
+        train_csv=train_csv,
+        artist_map=artist_map,
+        genre_map=genre_map,
+        style_map=style_map,
+        transform=None
+    )
 
 idx_to_style = dataset.idx_to_style
 idx_to_genre = dataset.idx_to_genre

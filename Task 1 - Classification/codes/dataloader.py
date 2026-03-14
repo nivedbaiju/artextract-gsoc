@@ -3,6 +3,13 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
 
+root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
+train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
+val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_merged.csv"
+artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
+
 def getdataloader(train_csv,val_csv, root_dir,artist_map,genre_map,style_map):
 
     # augmentations performed: EfficientNet b3(my CNN backbone) uses 300x300 inputs so we do RandomResizedCrop(300), then images are randomly flipped horizontally with a probability of 0.5
@@ -55,7 +62,7 @@ def compute_weight(labels):
     return weights
 
 def weight_values(csv_path, root_dir, artist_map, genre_map, style_map):
-    dataset= WikiArtSupervisedDataset(csv_path, root_dir,artist_map,genre_map,style_map,transform=None)
+    dataset= WikiArtSupervisedDataset(root_dir,csv_path,artist_map,genre_map,style_map,transform=None)
     style_weights=compute_weight(dataset.style_labels)
     genre_weights=compute_weight(dataset.genre_labels)
     artist_weights=compute_weight(dataset.artist_labels)
