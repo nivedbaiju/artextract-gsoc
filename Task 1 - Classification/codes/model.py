@@ -22,6 +22,8 @@ class CNN_BiLSTM(torch.nn.Module):
         #since the bilstm is bidirectional,o/p dimension will be 512*2=1024
         bilstm_out_dim=1024
 
+        self.dropout=torch.nn.Dropout(0.3)
+
         #inorder to get three labels as outputs,we design three fc layers for final label generations.
         self.style_head=torch.nn.Linear(bilstm_out_dim,num_style)
         self.genre_head=torch.nn.Linear(bilstm_out_dim,num_genre)  
@@ -41,6 +43,7 @@ class CNN_BiLSTM(torch.nn.Module):
         
         #use mean pooling to get summary of all patches.
         fc_in = lstm_out.mean(dim=1)
+        fc_in=self.dropout(fc_in)
         
         style_out=self.style_head(fc_in)
         genre_out=self.genre_head(fc_in)    
