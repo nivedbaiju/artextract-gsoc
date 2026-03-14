@@ -33,7 +33,7 @@ num_artists = len(artist_weights)
 
 dataset = WikiArtSupervisedDataset(
         root_dir=root_dir,
-        train_csv=train_csv,
+        csv_file=train_csv,
         artist_map=artist_map,
         genre_map=genre_map,
         style_map=style_map,
