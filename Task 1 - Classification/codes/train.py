@@ -5,11 +5,15 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.amp import autocast,GradScaler
 import matplotlib.pyplot as plt
+import os
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
+
+os.makedirs("checkpoints", exist_ok=True)
+os.makedirs("results", exist_ok=True)
 
 print(f"Using device:{device}")
 
