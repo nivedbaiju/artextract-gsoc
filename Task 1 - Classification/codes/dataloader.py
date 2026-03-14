@@ -4,8 +4,8 @@ from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
 
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
-val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_merged.csv"
+train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_fixed.csv"
 artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
 genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
 style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"

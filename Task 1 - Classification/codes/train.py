@@ -20,12 +20,12 @@ print(f"Using device:{device}")
 epochs=25
 
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
-val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_merged.csv"
+train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_fixed.csv"
 artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
 genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
 style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
-csv_path=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
+csv_path=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
 
 def main():
     train_loader,val_loader=getdataloader(train_csv=train_csv,val_csv=val_csv,root_dir=root_dir,artist_map=artist_map,genre_map=genre_map,style_map=style_map)
