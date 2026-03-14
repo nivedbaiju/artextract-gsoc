@@ -1,8 +1,7 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader,WeightedRandomSampler
 from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
-
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
 train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
 val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_fixed.csv"
@@ -48,8 +47,20 @@ def getdataloader(train_csv,val_csv, root_dir,artist_map,genre_map,style_map):
     print(f"No of training samples:",len(train_dataset))
     print(f"No of validation samples:",len(val_dataset))
 
-    train_loader=DataLoader(train_dataset,batch_size=8,shuffle=True,num_workers=2,pin_memory=True)
-    val_loader=DataLoader(val_dataset,batch_size=8,shuffle=False,num_workers=2,pin_memory=True)
+    genre_labels = torch.tensor(train_dataset.genre_labels)
+    style_labels = torch.tensor(train_dataset.style_labels)
+
+    style_counts = torch.bincount(torch.tensor(style_labels))
+    genre_counts = torch.bincount(torch.tensor(genre_labels))
+    
+    style_weights=1.0/style_counts.clamp(min=1).float()
+    genre_weights=1.0/genre_counts.clamp(min=1).float()
+
+    sample_weights = style_weights[style_labels]+ genre_weights[genre_labels]
+
+    sampler=WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
+    train_loader=DataLoader(train_dataset,batch_size=8,sampler=sampler,num_workers=2,pin_memory=True,persistent_workers=True)
+    val_loader=DataLoader(val_dataset,batch_size=8,shuffle=False,num_workers=2,pin_memory=True,persistent_workers=True)
     return train_loader, val_loader
 
 def compute_weight(labels):
