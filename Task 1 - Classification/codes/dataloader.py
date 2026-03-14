@@ -2,10 +2,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset
 
-def getdataloader(csv_path, root_dir):
+def getdataloader(train_csv,val_csv, root_dir,artist_map,genre_map,style_map):
 
     # augmentations performed: EfficientNet b3(my CNN backbone) uses 300x300 inputs so we do RandomResizedCrop(300), then images are randomly flipped horizontally with a probability of 0.5
     # we only apply mild colorjitter to preserve the original colours and textures of the painting
@@ -20,19 +18,28 @@ def getdataloader(csv_path, root_dir):
                               v2.ToTensor(),
                                 v2.Normalize(mean=[0.485, 0.456, 0.406],
                                              std=[0.229, 0.224, 0.225])])
-    dataset= WikiArtSupervisedDataset(csv_path=csv_path, root_dir=root_dir,transform=None)
-    #see no of images
-    print(len(dataset))
 
-    labels=dataset.artist_labels
-    #here i am using stratified split to avoid class imbalance
-    train_indices,val_indices= train_test_split(range(len(dataset)), test_size=0.2, stratify=labels, random_state=42)
-    
-    train_dataset= WikiArtSupervisedDataset(csv_path=csv_path, root_dir=root_dir,transform=train_transform)
-    val_dataset= WikiArtSupervisedDataset(csv_path=csv_path, root_dir=root_dir,transform=val_transform)
-    
-    train_dataset= Subset(train_dataset, train_indices)
-    val_dataset= Subset(val_dataset, val_indices)
+
+    train_dataset = WikiArtSupervisedDataset(
+        root_dir,
+        train_csv,
+        artist_map,
+        genre_map,
+        style_map,
+        transform=train_transform
+    )
+
+    val_dataset = WikiArtSupervisedDataset(
+        root_dir,
+        val_csv,
+        artist_map,
+        genre_map,
+        style_map,
+        transform=val_transform
+    )
+
+    print(f"No of training samples:",len(train_dataset))
+    print(f"No of validation samples:",len(val_dataset))
 
     train_loader=DataLoader(train_dataset,batch_size=32,shuffle=True,num_workers=4,pin_memory=True)
     val_loader=DataLoader(val_dataset,batch_size=32,shuffle=False,num_workers=4,pin_memory=True)
@@ -47,8 +54,8 @@ def compute_weight(labels):
     weights=total_samples / (num_classes * class_counts.clamp(min=1).float())
     return weights
 
-def weight_values(csv_path, root_dir):
-    dataset= WikiArtSupervisedDataset(csv_path=csv_path, root_dir=root_dir,transform=None)
+def weight_values(csv_path, root_dir, artist_map, genre_map, style_map):
+    dataset= WikiArtSupervisedDataset(csv_path, root_dir,artist_map,genre_map,style_map,transform=None)
     style_weights=compute_weight(dataset.style_labels)
     genre_weights=compute_weight(dataset.genre_labels)
     artist_weights=compute_weight(dataset.artist_labels)
