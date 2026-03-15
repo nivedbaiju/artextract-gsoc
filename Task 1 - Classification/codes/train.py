@@ -6,6 +6,7 @@ import torch.optim as optim
 from torch.amp import autocast,GradScaler
 import matplotlib.pyplot as plt
 import os
+from sklearn.metrics import f1_score
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -20,12 +21,43 @@ print(f"Using device:{device}")
 epochs=25
 
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
-val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_fixed.csv"
-artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
-genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
-style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
-csv_path=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
+train_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\val_labels_fixed.csv"
+artist_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\style_class.txt"
+csv_path=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=None, gamma=2):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.ce = nn.CrossEntropyLoss(weight=alpha, reduction="none")
+
+    def forward(self, inputs, targets):
+        ce_loss = self.ce(inputs, targets)
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+        return focal_loss.mean()
+
+def per_class_accuracy(preds, labels, num_classes):
+    correct = [0] * num_classes
+    total = [0] * num_classes
+
+    for p, l in zip(preds, labels):
+        total[l] += 1
+        if p == l:
+            correct[l] += 1
+
+    acc = []
+    for i in range(num_classes):
+        if total[i] == 0:
+            acc.append(0)
+        else:
+            acc.append(correct[i] / total[i])
+
+    return acc
 
 def main():
     train_loader,val_loader=getdataloader(train_csv=train_csv,val_csv=val_csv,root_dir=root_dir,artist_map=artist_map,genre_map=genre_map,style_map=style_map)
@@ -45,8 +77,8 @@ def main():
     for p in model.cnn_backbone.parameters():
         p.requires_grad = False
 
-    style_loss_fn=nn.CrossEntropyLoss(weight=style_weights,label_smoothing=0.1)
-    genre_loss_fn=nn.CrossEntropyLoss(weight=genre_weights,label_smoothing=0.1)
+    style_loss_fn = FocalLoss(alpha=style_weights,gamma=1.5)
+    genre_loss_fn = FocalLoss(alpha=genre_weights, gamma=2)
     artist_loss_fn=nn.CrossEntropyLoss(weight=artist_weights,label_smoothing=0.1)
     optimizer=optim.AdamW(model.parameters(),lr=3e-4,weight_decay=1e-4)
 
@@ -117,6 +149,12 @@ def main():
         correct_artist=0
         total_samples=0
 
+        all_style_preds=[]
+        all_style_labels=[]
+        all_genre_preds=[]
+        all_genre_labels=[]
+        all_artist_preds=[]
+        all_artist_labels=[]
         #follows almost same logic as training loop but we dont backprop on validation data.
         with torch.no_grad():
             for images,style_labels,genre_labels,artist_labels in val_loader:
@@ -138,6 +176,13 @@ def main():
                 _, predicted_style = torch.max(style_out, 1)
                 _, predicted_genre = torch.max(genre_out, 1)
                 _, predicted_artist = torch.max(artist_out, 1)
+
+                all_style_preds.extend(predicted_style.cpu().numpy())
+                all_style_labels.extend(style_labels.cpu().numpy())
+                all_genre_preds.extend(predicted_genre.cpu().numpy())
+                all_genre_labels.extend(genre_labels.cpu().numpy())
+                all_artist_preds.extend(predicted_artist.cpu().numpy())
+                all_artist_labels.extend(artist_labels.cpu().numpy())
 
                 correct_style += (predicted_style == style_labels).sum().item()
                 correct_genre += (predicted_genre == genre_labels).sum().item()
@@ -166,12 +211,29 @@ def main():
                 "best_val_acc": best_val_acc}, "../checkpoints/best_model.pth")
                 print(f"New best model obtained with combined accuracy: {best_val_acc:.4f}")
             
+            style_f1 = f1_score(all_style_labels, all_style_preds, average='macro')
+            genre_f1 = f1_score(all_genre_labels, all_genre_preds, average='macro')
+            artist_f1 = f1_score(all_artist_labels, all_artist_preds, average='macro')
+
+
+            style_class_acc = per_class_accuracy(all_style_preds, all_style_labels, num_style)
+            genre_class_acc = per_class_accuracy(all_genre_preds, all_genre_labels, num_genre)
+            artist_class_acc = per_class_accuracy(all_artist_preds, all_artist_labels, num_artists)
+
             print(f"Epoch [{epoch+1}/{epochs}] | "
                 f"Validation Loss: {avg_val_loss:.4f} | "
                 f"Style Acc: {style_acc:.4f} | "
                 f"Genre Acc: {genre_acc:.4f} | "
-                f"Artist Acc: {artist_acc:.4f}")
+                f"Artist Acc: {artist_acc:.4f} | "
+                f"Style F1: {style_f1:.4f} | "
+                f"Genre F1: {genre_f1:.4f} | "
+                f"Artist F1: {artist_f1:.4f} | "
+                )
             
+            if epoch % 5 == 0:
+                print("Style Per-Class Acc:", style_class_acc)
+                print("Genre Per-Class Acc:", genre_class_acc)
+                print("Artist Per-Class Acc:", artist_class_acc)
 
     #plot the metrics
 
