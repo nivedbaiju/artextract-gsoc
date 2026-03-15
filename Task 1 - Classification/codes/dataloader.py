@@ -2,12 +2,14 @@ import torch
 from torch.utils.data import Dataset, DataLoader,WeightedRandomSampler
 from torchvision.transforms import v2
 from dataset import WikiArtSupervisedDataset
+
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_fixed.csv"
-val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_fixed.csv"
-artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
-genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
-style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
+train_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\val_labels_fixed.csv"
+artist_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\style_class.txt"
+csv_path=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
 
 def getdataloader(train_csv,val_csv, root_dir,artist_map,genre_map,style_map):
 
