@@ -29,7 +29,7 @@ class CNN_BiLSTM(torch.nn.Module):
         self.genre_head=torch.nn.Linear(bilstm_out_dim,num_genre)  
         self.artist_head=torch.nn.Linear(bilstm_out_dim,num_artists) 
 
-    def forward(self,x):
+    def forward(self,x,return_features=False):
         cnn_features=self.cnn_backbone.forward_features(x)
         B,C,H,W=cnn_features.shape 
 
@@ -49,4 +49,6 @@ class CNN_BiLSTM(torch.nn.Module):
         genre_out=self.genre_head(fc_in)    
         artist_out=self.artist_head(fc_in)
 
+        if return_features:
+            return style_out, genre_out, artist_out, fc_in
         return style_out, genre_out, artist_out
