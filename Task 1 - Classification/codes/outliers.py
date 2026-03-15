@@ -6,39 +6,54 @@ import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from dataset import WikiArtSupervisedDataset
+from dataloader import weight_values
 from model import CNN_BiLSTM
 from torchvision.transforms import v2
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
 # paths
-csv_path =r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
-root_dir = r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-checkpoint_path= r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\checkpoints\best_model.pth"
+root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
+train_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\val_labels_fixed.csv"
+artist_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\style_class.txt"
+csv_path=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+
+checkpoint_path=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\checkpoints\best_model.pth"
+
 
 #inorder to detect outliers we will use knn + confidence score.
 k= 20
 outlier_percentage= 0.02
 
-train_transform=v2.Compose([v2.RandomResizedCrop(300),
-                v2.RandomHorizontalFlip(p=0.5),
-                v2.ColorJitter(brightness=0.1,contrast=0.1,saturation=0.1,hue=0.02),
-                v2.ToTensor(),
-                v2.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])
+val_transform=v2.Compose([v2.Resize(300),v2.CenterCrop(300),
+                              v2.ToTensor(),
+                                v2.Normalize(mean=[0.485, 0.456, 0.406],
+                                             std=[0.229, 0.224, 0.225])])
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # dataset
-dataset=WikiArtSupervisedDataset(root_dir, csv_path, transform=train_transform)
-loader=DataLoader(dataset, batch_size=32, shuffle=False, num_workers=4)
+dataset=WikiArtSupervisedDataset(root_dir, csv_path,artist_map,genre_map,style_map, transform=val_transform)
+loader=DataLoader(dataset, batch_size=8, shuffle=False, num_workers=2)
 
+style_weights, genre_weights, artist_weights= (weight_values(csv_path=csv_path, root_dir=root_dir, artist_map=artist_map, genre_map=genre_map, style_map=style_map))
+style_weights=style_weights.to(device)
+genre_weights=genre_weights.to(device)
+artist_weights=artist_weights.to(device)
 
-num_style = dataset.num_styles
-num_genre = dataset.num_genres
-num_artist = dataset.num_artists
-
+num_style = len(style_weights)
+num_genre = len(genre_weights)
+num_artists = len(artist_weights)
 
 # define model
-model = CNN_BiLSTM(num_style, num_genre, num_artist)
+model = CNN_BiLSTM(num_style, num_genre, num_artists)
 checkpoint = torch.load(checkpoint_path, map_location=device)
 model.load_state_dict(checkpoint["model"])
 model = model.to(device)
@@ -56,29 +71,31 @@ paths= []
 
 
 with torch.no_grad():
-    for images, style, genre, artist, path in tqdm(loader):
+    for batch_idx, (images, style, genre, artist) in enumerate(tqdm(loader)):
 
-        images = images.to(device)
-        #run theforward pass
-        style_logits, genre_logits, artist_logits, features = model(images, return_features=True)
+      images = images.to(device)
 
-        #extract only features
-        embeddings.append(features.cpu().numpy())
+      style_logits, genre_logits, artist_logits, features = model(images, return_features=True)
 
-        # labels
-        style_labels.extend(style.numpy())
-        genre_labels.extend(genre.numpy())
-        artist_labels.extend(artist.numpy())
-        paths.extend(path)
+      embeddings.append(features.cpu().numpy())
 
-        # confidence
-        style_prob= F.softmax(style_logits, dim=1)
-        genre_prob= F.softmax(genre_logits, dim=1)
-        artist_prob= F.softmax(artist_logits, dim=1)
+      style_labels.extend(style.numpy())
+      genre_labels.extend(genre.numpy())
+      artist_labels.extend(artist.numpy())
 
-        style_confidence.extend(style_prob.max(dim=1).values.cpu().numpy())
-        genre_confidence.extend(genre_prob.max(dim=1).values.cpu().numpy())
-        artist_confidence.extend(artist_prob.max(dim=1).values.cpu().numpy())
+      start = batch_idx * loader.batch_size
+      end = start + images.size(0)
+
+      batch_paths = dataset.data.iloc[start:end, 0].values
+      paths.extend(batch_paths)
+
+      style_prob = F.softmax(style_logits, dim=1)
+      genre_prob = F.softmax(genre_logits, dim=1)
+      artist_prob = F.softmax(artist_logits, dim=1)
+
+      style_confidence.extend(style_prob.max(dim=1).values.cpu().numpy())
+      genre_confidence.extend(genre_prob.max(dim=1).values.cpu().numpy())
+      artist_confidence.extend(artist_prob.max(dim=1).values.cpu().numpy())
 
 
 embeddings = np.concatenate(embeddings)
@@ -141,4 +158,4 @@ for i in outlier_idx:
 df = pd.DataFrame(results)
 df = df.sort_values("score", ascending=False)
 #save detected outliers to csv file..
-df.to_csv("detected_outliers.csv", index=False)
+df.to_csv(r"..\\results/detected_outliers.csv", index=False)
