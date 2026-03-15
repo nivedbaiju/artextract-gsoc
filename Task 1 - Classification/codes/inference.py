@@ -15,12 +15,12 @@ transform=v2.Compose([v2.Resize(300),v2.CenterCrop(300),
                                              std=[0.229, 0.224, 0.225])])
 
 root_dir=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_filtered"
-train_csv=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
-val_csv=r"C:\Users\nived\Downloads\wikiart_csv\val_labels_merged.csv"
-artist_map=r"C:\Users\nived\Downloads\wikiart_csv\artist_class.txt"
-genre_map=r"C:\Users\nived\Downloads\wikiart_csv\genre_class.txt"
-style_map=r"C:\Users\nived\Downloads\wikiart_csv\style_class.txt"
-csv_path=r"C:\Users\nived\Downloads\wikiart_csv\train_labels_merged.csv"
+train_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
+val_csv=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\val_labels_fixed.csv"
+artist_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\artist_class.txt"
+genre_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\genre_class.txt"
+style_map=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\style_class.txt"
+csv_path=r"C:\Users\nived\artextract-gsoc\Task 1 - Classification\datasets\wikiart_csv\train_labels_fixed.csv"
 
 style_weights, genre_weights, artist_weights= (weight_values(csv_path=csv_path, root_dir=root_dir, artist_map=artist_map, genre_map=genre_map, style_map=style_map))
 style_weights=style_weights.to(device)
@@ -45,7 +45,8 @@ idx_to_genre = dataset.idx_to_genre
 idx_to_artist = dataset.idx_to_artist
 
 model=CNN_BiLSTM(num_style=num_style,num_genre=num_genre,num_artists=num_artists).to(device)
-model.load_state_dict(torch.load("checkpoints/best_model.pth", map_location=device))
+checkpoint = torch.load("..\\checkpoints/best_model.pth", map_location=device)
+model.load_state_dict(checkpoint["model"])
 model.eval()
 
 def predict(image_path):
@@ -77,4 +78,4 @@ def predict(image_path):
     print(f"Predicted Genre: {genre_label} (Index={genre_pred})(Confidence={genre_prob:.4f})")
     print(f"Predicted Artist: {artist_label} (Index={artist_pred})(Confidence={artist_prob:.4f})")
 
-predict("sample_image.jpg")
+predict(r"C:\Users\nived\Downloads\pablo-picasso-three-musicians.jpg")
