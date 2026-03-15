@@ -12,8 +12,8 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-os.makedirs("checkpoints", exist_ok=True)
-os.makedirs("results", exist_ok=True)
+os.makedirs("..\\checkpoints", exist_ok=True)
+os.makedirs("..\\results", exist_ok=True)
 
 print(f"Using device:{device}")
 
@@ -158,7 +158,12 @@ def main():
             #we save the best model
             if combined_accuracy > best_val_acc:
                 best_val_acc= combined_accuracy
-                torch.save(model.state_dict(), "checkpoints/best_model.pth")
+                torch.save({
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "epoch": epoch,
+                "best_val_acc": best_val_acc}, "../checkpoints/best_model.pth")
                 print(f"New best model obtained with combined accuracy: {best_val_acc:.4f}")
             
             print(f"Epoch [{epoch+1}/{epochs}] | "
@@ -179,7 +184,7 @@ def main():
     plt.ylabel("Loss")
     plt.title("Training vs Validation Loss")
     plt.legend()
-    plt.savefig("results/loss_curve.png")
+    plt.savefig("..\\results/loss_curve.png")
     plt.close()
 
     #accuracy curves
@@ -192,7 +197,7 @@ def main():
     plt.ylabel("Accuracy")
     plt.title("Validation Accuracy per Task")
     plt.legend()
-    plt.savefig("results/accuracy_curve.png")
+    plt.savefig("..\\results/accuracy_curve.png")
     plt.close()
 
 if __name__ == "__main__":
