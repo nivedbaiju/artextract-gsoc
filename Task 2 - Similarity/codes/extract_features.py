@@ -9,6 +9,7 @@ import torchvision.transforms as T
 
 if torch.cuda.is_available():device='cuda'
 else: device='cpu'
+print(device)
 # i will be using both clip and dino for extracting image features.
 # clip will semantically understand the image and dino will capture the visual features of the image and both the features are finally combined.
 
@@ -19,7 +20,7 @@ dino_model=timm.create_model('vit_large_patch14_dinov2', pretrained=True,num_cla
 dino_model.eval()
 dino_model.to(device)
 
-dino_transform = T.Compose([T.Resize(256),T.CenterCrop(224),
+dino_transform = T.Compose([T.Resize(518),T.CenterCrop(518),
     T.ToTensor(),T.Normalize(mean=(0.485, 0.456, 0.406),std=(0.229, 0.224, 0.225)),])
 
 def load_image(image_path):
