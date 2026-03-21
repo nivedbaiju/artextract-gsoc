@@ -48,7 +48,7 @@ def combine_features(clip_ftrs, dino_ftrs,alpha=0.5):
     return combined_ftrs.astype('float32')
 
 #main fn
-def extract_features(image_path,alpha=0.5):
+def extract_feature(image_path,alpha=0.5):
     img=load_image(image_path)
     clip_ftrs=clip_features(img)
     dino_ftrs=dino_features(img)
