@@ -7,31 +7,44 @@ from PIL import Image
 
 def main():
 
-    index=faiss.read_index("intermediates/index.faiss")
+    index=faiss.read_index(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\intermediates\index.faiss")
 
-    with open("intermediates/image_paths.pkl", "rb") as f:
+    with open(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\intermediates\image_paths.pkl", "rb") as f:
         paths=pickle.load(f)
 
     # kindly insert your image here
-    query_img=r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\datasets\NAG images\0d28dd57-29c2-4e05-9c34-fb709253ef64.jpg"
-
+    query_img=r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\datasets\NAG images\ffd9b608-2d8d-4851-90f8-e05675ba9d3b.jpg"
     query_ftrs=extract_feature(query_img).astype("float32").reshape(1, -1)
-    #we only need indexes we ignore cosine similarities
-    _,I=index.search(query_ftrs, k=5)
+    D,I=index.search(query_ftrs, k=10)
 
-    results=[paths[i] for i in I[0]]
+    top_score=D[0][0]
+
+    valid_results = []
+    for score, idx in zip(D[0], I[0]):
+        print(f"Score: {score:.4f}, Path: {paths[idx]}")
+        if score >= top_score * 0.75 and score>=0.54:
+            valid_results.append((score,idx))
+
+    valid_results=valid_results[:3]
+    if len(valid_results) == 0:
+        print("No valid results found.")
+        return
+    
+    results=[paths[idx] for (_,idx) in valid_results]
+    scores=[score for (score,_) in valid_results]
 
     # show results
-    plt.figure(figsize=(10, 3))
+    plt.figure(figsize=(3*(len(results)+1), 5))
 
-    plt.subplot(1, 6, 1)
+    plt.subplot(1, len(results)+1, 1)
     plt.imshow(Image.open(query_img))
-    plt.title("Query")
+    plt.title("Query",fontsize=6)
     plt.axis("off")
 
-    for i, path in enumerate(results):
-        plt.subplot(1, 6, i + 2)
+    for i, (path, score) in enumerate(zip(results, scores)):
+        plt.subplot(1, len(results)+1, i + 2)
         plt.imshow(Image.open(path))
+        plt.title(f"Score: {score:.4f}", fontsize=8)
         plt.axis("off")
 
     plt.show()
