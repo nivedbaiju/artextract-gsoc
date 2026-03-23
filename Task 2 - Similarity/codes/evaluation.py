@@ -10,8 +10,10 @@ index=faiss.read_index(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\inte
 with open(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\intermediates\image_paths.pkl", "rb") as f:
     paths=pickle.load(f)
 
-with open(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\intermediates\ground_truth.pkl", "rb") as f:
-    ground_truth=pickle.load(f)
+import sys
+sys.path.append(r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\intermediates")
+
+from ground_truth import ground_truth
 
 
 def get_retrieved(query_img, k=10):
