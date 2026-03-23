@@ -13,7 +13,7 @@ def main():
         paths=pickle.load(f)
 
     # kindly insert your image here
-    query_img=r"C:\Users\nived\artextract-gsoc\Task 2 - Similarity\datasets\NAG images\ffd9b608-2d8d-4851-90f8-e05675ba9d3b.jpg"
+    query_img=r"C:\Users\nived\Downloads\71sx2Ah81FL.jpg"
     query_ftrs=extract_feature(query_img).astype("float32").reshape(1, -1)
     D,I=index.search(query_ftrs, k=10)
 
